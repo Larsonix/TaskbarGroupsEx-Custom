@@ -16,14 +16,12 @@
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <AnalysisLevel>latest-all</AnalysisLevel>
     <ErrorReport>none</ErrorReport>
-    <SignAssembly>True</SignAssembly>
-    <DelaySign>False</DelaySign>
-    <AssemblyOriginatorKeyFile>TaskbarGroupsEx.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>False</SignAssembly>
     <Title>Taskbar Groups Ex</Title>
     <Description>An Upgraded Lightweight Utility for Organizing the Taskbar through Groups</Description>
     <Copyright> MIT License</Copyright>
-    <PackageProjectUrl>https://github.com/AndyMatt/Taskbar-Groups-Ex</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/AndyMatt/Taskbar-Groups-Ex</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Larsonix/TaskbarGroupsEx-Custom</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Larsonix/TaskbarGroupsEx-Custom</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>Taskbar;Windows;Folders</PackageTags>
     <NeutralLanguage>en</NeutralLanguage>
@@ -76,9 +74,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Drawing.Common">
-      <HintPath>C:\Program Files\Microsoft Visual Studio\2022\Community\dotnet\net8.0\runtime\shared\Microsoft.WindowsDesktop.App\8.0.12\System.Drawing.Common.dll</HintPath>
-    </Reference>
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

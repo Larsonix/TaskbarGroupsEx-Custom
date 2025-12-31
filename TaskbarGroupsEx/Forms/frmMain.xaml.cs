@@ -101,18 +101,18 @@ namespace TaskbarGroupsEx.Forms
                         tagRECT rect = element.CurrentBoundingRectangle;
                         if (sAutomationId.Contains("tjackenpacken.taskbarGroup.menu."+ mShortcutName))
                         {
-                            this.Left = rect.left + ((rect.right - rect.left) / 2) - (pnlShortcutIcons.Width/2);
-                            this.Top = rect.top - (pnlShortcutIcons.Height);
+                            this.Left = rect.left + ((rect.right - rect.left) / 2) - (pnlShortcutIcons.Width/2) + (fgConfig?.PopupXOffset ?? 0);
+                            this.Top = rect.top - (pnlShortcutIcons.Height) + (fgConfig?.PopupYOffset ?? 0);
                             return;
                         }
                     }
                 }
             }
 
-            //Fallback to Mice
+            //Fallback to Mouse position (also apply offsets)
             Point mousePos = NativeMethods.GetMousePosition();
-            this.Left = mousePos.X; 
-            this.Top = mousePos.Y;
+            this.Left = mousePos.X + (fgConfig?.PopupXOffset ?? 0);
+            this.Top = mousePos.Y + (fgConfig?.PopupYOffset ?? 0);
         }
         //
         //------------------------------------------------------------------------------------
@@ -129,18 +129,37 @@ namespace TaskbarGroupsEx.Forms
                 fgConfig.SaveIcons();
             }
 
-            double columnCount = Math.Ceiling((double)fgConfig.GroupItemList.Count / fgConfig.CollumnCount);
-            pnlShortcutIcons.Height = columnCount * 45 ;
-            pnlShortcutIcons.Width = (fgConfig.CollumnCount * 55);
+            int totalIcons = fgConfig.GroupItemList.Count;
+            int maxColumns = fgConfig.CollumnCount;
+            // Actual columns = min of total icons and max columns setting
+            int actualColumns = Math.Min(totalIcons, maxColumns);
+            double rowCount = Math.Ceiling((double)totalIcons / maxColumns);
 
-            foreach (DynamicGroupItem groupItem in fgConfig.GroupItemList)
+            int iconSize = fgConfig.IconSize > 0 ? fgConfig.IconSize : 24;
+            int spacing = fgConfig.IconSpacing;  // Gap between icons (0 = touching)
+
+            // Icon width = size + padding for hover glow
+            int iconWidth = iconSize + 8;
+            // Panel width = actual icons + gaps between them (no trailing gap)
+            int panelWidth = (actualColumns * iconWidth) + ((actualColumns - 1) * spacing);
+            // Height: rows with padding
+            pnlShortcutIcons.Height = rowCount * (iconSize + 14) + 4;
+            pnlShortcutIcons.Width = panelWidth;
+
+            for (int i = 0; i < fgConfig.GroupItemList.Count; i++)
             {
+                DynamicGroupItem groupItem = fgConfig.GroupItemList[i];
+
+                // Check if this icon is last in its row (no right margin needed)
+                bool isLastInRow = ((i + 1) % actualColumns == 0) || (i == fgConfig.GroupItemList.Count - 1);
+
                 // Building shortcut controls
                 ucShortcut pscPanel = new ucShortcut()
                 {
                     GroupItem = groupItem,
                     MotherForm = this,
                     ThisCategory = fgConfig,
+                    IsLastInRow = isLastInRow,
                 };
 
                 pnlShortcutIcons.Children.Add(pscPanel);

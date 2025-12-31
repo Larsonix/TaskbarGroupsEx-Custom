@@ -197,6 +197,14 @@ namespace TaskbarGroupsEx.Classes
         public Color CatagoryBGColor = Color.FromArgb(255, 31, 31, 31);
         public bool allowOpenAll = false;
 
+        // Popup position offsets (in pixels)
+        public int PopupXOffset = 0;
+        public int PopupYOffset = 0;
+
+        // Icon customization
+        public int IconSize = 24;        // Default icon size in pixels (matches original)
+        public int IconSpacing = 55;     // Default spacing between icons
+
         public string? ConfigurationPath = null;
         public string configurationFilePath = "";
         public string ConfigurationFilePath
@@ -243,6 +251,12 @@ namespace TaskbarGroupsEx.Classes
             mConfigFile.GetProperty("CatagoryBGColor", ref CatagoryBGColor);
             mConfigFile.GetProperty("allowOpenAll", ref allowOpenAll);
 
+            // Load popup customization settings
+            mConfigFile.GetProperty("PopupXOffset", ref PopupXOffset);
+            mConfigFile.GetProperty("PopupYOffset", ref PopupYOffset);
+            mConfigFile.GetProperty("IconSize", ref IconSize);
+            mConfigFile.GetProperty("IconSpacing", ref IconSpacing);
+
             foreach (ConfigFile.GroupItemConfig itemConfig in mConfigFile.mGroupItems)
             {
                 string ItemType = "";
@@ -267,6 +281,12 @@ namespace TaskbarGroupsEx.Classes
             mConfigFile.WriteProperty("CollumnCount", CollumnCount.ToString());
             mConfigFile.WriteProperty("CatagoryBGColor", ColorToUnsignedInt(CatagoryBGColor).ToString("X4"));
             mConfigFile.WriteProperty("allowOpenAll", allowOpenAll.ToString());
+
+            // Save popup customization settings
+            mConfigFile.WriteProperty("PopupXOffset", PopupXOffset.ToString());
+            mConfigFile.WriteProperty("PopupYOffset", PopupYOffset.ToString());
+            mConfigFile.WriteProperty("IconSize", IconSize.ToString());
+            mConfigFile.WriteProperty("IconSpacing", IconSpacing.ToString());
 
             for (int i = 0; i < GroupItemList.Count; i++)
             {
