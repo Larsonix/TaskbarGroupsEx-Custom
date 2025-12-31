@@ -360,3 +360,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Release zip files
+*.zip
+
+# Strong name key files
+*.snk
+
+# PowerShell scripts (build helpers)
+generate_snk.ps1

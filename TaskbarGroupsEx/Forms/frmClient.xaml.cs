@@ -100,7 +100,7 @@ namespace TaskbarGroupsEx
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("User-Agent", "taskbar-groups");
-                var res = await client.GetAsync("https://api.github.com/repos/AndyMatt/Taskbar-Groups-Ex/releases");
+                var res = await client.GetAsync("https://api.github.com/repos/Larsonix/TaskbarGroupsEx-Custom/releases");
                 res.EnsureSuccessStatusCode();
                 string responseBody = await res.Content.ReadAsStringAsync();
 

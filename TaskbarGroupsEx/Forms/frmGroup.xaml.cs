@@ -61,6 +61,12 @@ namespace TaskbarGroupsEx
                 radioDark.IsChecked = true;
                 mCollumnCount = 4;
                 lblNum.Text = mCollumnCount.ToString();
+
+                // Initialize default popup customization values
+                lblXOffset.Text = "0";
+                lblYOffset.Text = "0";
+                lblIconSize.Text = fgConfig.IconSize.ToString();
+                lblIconSpacing.Text = fgConfig.IconSpacing.ToString();
             }
             else
             {
@@ -73,6 +79,12 @@ namespace TaskbarGroupsEx
                 mCollumnCount = fgConfig.CollumnCount;
                 lblNum.Text = mCollumnCount.ToString();
                 txtGroupName.Text = Regex.Replace(fgConfig.GetName(), @"(_)+", " ");
+
+                // Load popup customization settings
+                lblXOffset.Text = fgConfig.PopupXOffset.ToString();
+                lblYOffset.Text = fgConfig.PopupYOffset.ToString();
+                lblIconSize.Text = fgConfig.IconSize.ToString();
+                lblIconSpacing.Text = fgConfig.IconSpacing.ToString();
 
                 Color categoryColor = fgConfig.CatagoryBGColor;
 
@@ -381,7 +393,13 @@ namespace TaskbarGroupsEx
             Close();
         }
 
-        private void cmdSave_Click(object sender, RoutedEventArgs e)
+        // Apply changes without closing
+        private void cmdApply_Click(object sender, RoutedEventArgs e)
+        {
+            SaveGroup();
+        }
+
+        private void SaveGroup()
         {
             if (fgConfig == null)
                 return;
@@ -471,8 +489,8 @@ namespace TaskbarGroupsEx
                 //Client.LoadCategory(System.IO.Path.GetFullPath(@"config\" + fgConfig.GetName())); // Loading visuals
                 Client.LoadCategory(System.IO.Path.GetFullPath(fgConfig.ConfigurationPath!)); // Loading visuals
 
-                Close();
                 Client.Reload();
+                IsNew = false; // Mark as existing after first save
             }
             catch (IOException ex)
             {
@@ -638,6 +656,68 @@ namespace TaskbarGroupsEx
             _ = opacity == 0 ? numOpacDown.Disable() : numOpacDown.Enable();
             _ = opacity == 100 ? numOpacUp.Disable() : numOpacUp.Enable();
             //_ = opacity == 100 ? DisableOpacityButton(numOpacUp) : EnableOpacityButton(numOpacUp);
+        }
+
+        //--------------------------------------
+        // POPUP POSITION OFFSET CONTROLS
+        //--------------------------------------
+        private void cmdXOffsetUp_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.PopupXOffset = Math.Min(fgConfig.PopupXOffset + 10, 500);
+            lblXOffset.Text = fgConfig.PopupXOffset.ToString();
+        }
+
+        private void cmdXOffsetDown_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.PopupXOffset = Math.Max(fgConfig.PopupXOffset - 10, -500);
+            lblXOffset.Text = fgConfig.PopupXOffset.ToString();
+        }
+
+        private void cmdYOffsetUp_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.PopupYOffset = Math.Min(fgConfig.PopupYOffset + 10, 500);
+            lblYOffset.Text = fgConfig.PopupYOffset.ToString();
+        }
+
+        private void cmdYOffsetDown_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.PopupYOffset = Math.Max(fgConfig.PopupYOffset - 10, -500);
+            lblYOffset.Text = fgConfig.PopupYOffset.ToString();
+        }
+
+        //--------------------------------------
+        // ICON SIZE AND SPACING CONTROLS
+        //--------------------------------------
+        private void cmdIconSizeUp_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.IconSize = Math.Min(fgConfig.IconSize + 4, 64);
+            lblIconSize.Text = fgConfig.IconSize.ToString();
+        }
+
+        private void cmdIconSizeDown_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.IconSize = Math.Max(fgConfig.IconSize - 4, 16);
+            lblIconSize.Text = fgConfig.IconSize.ToString();
+        }
+
+        private void cmdIconSpacingUp_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.IconSpacing = Math.Min(fgConfig.IconSpacing + 5, 100);
+            lblIconSpacing.Text = fgConfig.IconSpacing.ToString();
+        }
+
+        private void cmdIconSpacingDown_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (fgConfig == null) return;
+            fgConfig.IconSpacing = Math.Max(fgConfig.IconSpacing - 5, 0);
+            lblIconSpacing.Text = fgConfig.IconSpacing.ToString();
         }
 
         //--------------------------------------
