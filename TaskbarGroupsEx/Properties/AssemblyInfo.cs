@@ -30,8 +30,8 @@ using System.Windows;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("0.9.1.0")]
-[assembly: AssemblyFileVersion("0.9.1.0")]
+[assembly: AssemblyVersion("0.9.1.1")]
+[assembly: AssemblyFileVersion("0.9.1.1")]
 
 [assembly: ThemeInfo(
     ResourceDictionaryLocation.None,            //where theme specific resource dictionaries are located
