@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using TaskbarGroupsEx.Classes;
 using TaskbarGroupsEx.GroupItems;
 using TaskbarGroupsEx.User_Controls;
@@ -21,6 +22,11 @@ namespace TaskbarGroupsEx.Forms
 
         private string mShortcutName;
         private string mPath;
+        private bool _closeOnDeactivate;
+
+        // Must match FolderGroupConfig.InstallShortcut AppUserModelID
+        private static string MenuAppUserModelId(string shortcutName) =>
+            "TaskbarGroupEx.Menu." + shortcutName;
 
         public double Right
         {
@@ -32,7 +38,7 @@ namespace TaskbarGroupsEx.Forms
         //
         public frmMain(string ShortcutName)
         {
-            NativeMethods.SetCurrentProcessExplicitAppUserModelID("tjackenpacken.taskbarGroup.menu." + ShortcutName);
+            NativeMethods.SetCurrentProcessExplicitAppUserModelID(MenuAppUserModelId(ShortcutName));
             System.Runtime.ProfileOptimization.StartProfile("frmMain.Profile");
 
             InitializeComponent();
@@ -40,6 +46,7 @@ namespace TaskbarGroupsEx.Forms
             mShortcutName = ShortcutName;
             mPath = MainPath.Config + mShortcutName;
             this.WindowStyle = WindowStyle.None;
+            this.Topmost = true;
 
 
             if (Directory.Exists(mPath))
@@ -70,49 +77,99 @@ namespace TaskbarGroupsEx.Forms
         {
             LoadCategory();
             SetLocation();
+
+            // Taskbar launches can fire Deactivated before the popup finishes activating.
+            Dispatcher.BeginInvoke(() => _closeOnDeactivate = true, DispatcherPriority.ApplicationIdle);
         }
 
         private void SetLocation()
         {
-            IntPtr hWndTray = NativeMethods.FindWindow("Shell_TrayWnd", null);
+            Point mousePos = NativeMethods.GetMousePosition();
+            double popupWidth = pnlShortcutIcons.Width;
+            double popupHeight = pnlShortcutIcons.Height;
+            int offsetX = fgConfig?.PopupXOffset ?? 0;
+            int offsetY = fgConfig?.PopupYOffset ?? 0;
 
-            IntPtr hWndRebar = NativeMethods.FindWindowEx(hWndTray, IntPtr.Zero, "ReBarWindow32", null);
-            IntPtr hWndMSTaskSwWClass = NativeMethods.FindWindowEx(hWndRebar, IntPtr.Zero, "MSTaskSwWClass", null);
-            IntPtr hWndMSTaskListWClass = NativeMethods.FindWindowEx(hWndMSTaskSwWClass, IntPtr.Zero, "MSTaskListWClass", null);
+            if (TrySetLocationFromTaskbarButton(mousePos, popupWidth, popupHeight, offsetX, offsetY))
+                return;
 
-            IUIAutomation pUIAutomation = new CUIAutomation();
+            // Fallback: center on cursor horizontally, sit above the cursor (taskbar click Y
+            // would otherwise place most of the popup under/off the bottom of the screen).
+            this.Left = mousePos.X - (popupWidth / 2) + offsetX;
+            this.Top = mousePos.Y - popupHeight + offsetY;
+        }
 
-            // Taskbar
-            IUIAutomationElement windowElement = pUIAutomation.ElementFromHandle(hWndMSTaskListWClass);
-            if (windowElement != null)
+        private bool TrySetLocationFromTaskbarButton(Point mousePos, double popupWidth, double popupHeight, int offsetX, int offsetY)
+        {
+            try
             {
-                IUIAutomationElementArray? elementArray = null;
-                IUIAutomationCondition condition = pUIAutomation.CreateTrueCondition();
-                elementArray = windowElement.FindAll(Interop.UIAutomationClient.TreeScope.TreeScope_Descendants | Interop.UIAutomationClient.TreeScope.TreeScope_Children, condition);
-                if (elementArray != null)
+                IUIAutomation uia = new CUIAutomation();
+                string modernId = MenuAppUserModelId(mShortcutName);
+                string legacyId = "tjackenpacken.taskbarGroup.menu." + mShortcutName;
+
+                tagRECT? bestRect = null;
+                double bestDistance = double.MaxValue;
+
+                foreach (string trayClass in new[] { "Shell_TrayWnd", "Shell_SecondaryTrayWnd" })
                 {
-                    Console.WriteLine("Taskbar");
-                    int nNbItems = elementArray.Length;
-                    for (int nItem = 0; nItem <= nNbItems - 1; nItem++)
+                    IntPtr hWndTray = NativeMethods.FindWindow(trayClass, null);
+                    if (hWndTray == IntPtr.Zero)
+                        continue;
+
+                    // Win11 exposes taskbar buttons under the tray / XAML bridge, not MSTaskListWClass.
+                    IUIAutomationElement? trayElement = uia.ElementFromHandle(hWndTray);
+                    if (trayElement == null)
+                        continue;
+
+                    IUIAutomationElementArray elementArray = trayElement.FindAll(
+                        TreeScope.TreeScope_Descendants,
+                        uia.CreateTrueCondition());
+
+                    for (int i = 0; i < elementArray.Length; i++)
                     {
-                        IUIAutomationElement element = elementArray.GetElement(nItem);
-                        string sName = element.CurrentName;
-                        string sAutomationId = element.CurrentAutomationId;
+                        IUIAutomationElement element = elementArray.GetElement(i);
+                        string automationId = element.CurrentAutomationId ?? string.Empty;
+                        string name = element.CurrentName ?? string.Empty;
+
+                        bool matches =
+                            automationId.Contains(modernId, StringComparison.OrdinalIgnoreCase) ||
+                            automationId.Contains(legacyId, StringComparison.OrdinalIgnoreCase) ||
+                            name.StartsWith(mShortcutName + " pinned", StringComparison.OrdinalIgnoreCase);
+
+                        if (!matches)
+                            continue;
+
                         tagRECT rect = element.CurrentBoundingRectangle;
-                        if (sAutomationId.Contains("tjackenpacken.taskbarGroup.menu."+ mShortcutName))
+                        if (rect.right <= rect.left || rect.bottom <= rect.top)
+                            continue;
+
+                        double centerX = (rect.left + rect.right) / 2.0;
+                        double centerY = (rect.top + rect.bottom) / 2.0;
+                        double dx = centerX - mousePos.X;
+                        double dy = centerY - mousePos.Y;
+                        double distance = (dx * dx) + (dy * dy);
+
+                        if (distance < bestDistance)
                         {
-                            this.Left = rect.left + ((rect.right - rect.left) / 2) - (pnlShortcutIcons.Width/2) + (fgConfig?.PopupXOffset ?? 0);
-                            this.Top = rect.top - (pnlShortcutIcons.Height) + (fgConfig?.PopupYOffset ?? 0);
-                            return;
+                            bestDistance = distance;
+                            bestRect = rect;
                         }
                     }
                 }
+
+                if (bestRect is tagRECT match)
+                {
+                    this.Left = match.left + ((match.right - match.left) / 2.0) - (popupWidth / 2.0) + offsetX;
+                    this.Top = match.top - popupHeight + offsetY;
+                    return true;
+                }
+            }
+            catch
+            {
+                // Fall through to mouse-based placement.
             }
 
-            //Fallback to Mouse position (also apply offsets)
-            Point mousePos = NativeMethods.GetMousePosition();
-            this.Left = mousePos.X + (fgConfig?.PopupXOffset ?? 0);
-            this.Top = mousePos.Y + (fgConfig?.PopupYOffset ?? 0);
+            return false;
         }
         //
         //------------------------------------------------------------------------------------
@@ -190,8 +247,9 @@ namespace TaskbarGroupsEx.Forms
         // Closes application upon deactivation
         private void frmMain_Deactivate(object sender, EventArgs e)
         {
-            // closes program if user clicks outside form
-            this.Close();
+            // closes program if user clicks outside form (after startup settle)
+            if (_closeOnDeactivate)
+                this.Close();
         }
 
         // Keyboard shortcut handlers
